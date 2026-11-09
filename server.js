@@ -1,6 +1,5 @@
 const express = require("express");
 const axios = require("axios");
-const cheerio = require("cheerio");
 
 const app = express();
 
@@ -26,54 +25,37 @@ app.get("/test-food", (req, res) => {
   });
 });
 
-app.post("/extract-food", async (req, res) => {
+app.get("/extract-food", async (req, res) => {
+
   try {
 
-    const { url } = req.body;
-
-    if (!url) {
-      return res.status(400).json({
-        success: false,
-        error: "Missing URL"
-      });
-    }
+    const url =
+      "https://spesaonline.esselunga.it/commerce/nav/supermercato/store/prodotto/720145/kioene-kroccanti-6-mini-cotolette-vegetali-con-spinaci-italiani-200-g";
 
     const response = await axios.get(url, {
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/130.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0"
       }
     });
 
-    const html = response.data;
-
-    const $ = cheerio.load(html);
-
     res.json({
       success: true,
-      title: $("title").text(),
-      htmlLength: html.length,
-      url: url
+      htmlLength: response.data.length
     });
 
   } catch (error) {
 
-    res.status(500).json({
+    res.json({
       success: false,
       error: error.message
     });
 
   }
+
 });
 
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-});
-app.get("/ping", (req, res) => {
-  res.json({
-    success: true,
-    message: "Ping ricevuto"
-  });
 });
