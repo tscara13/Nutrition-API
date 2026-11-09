@@ -12,6 +12,16 @@ app.get("/health", (req, res) => {
   });
 });
 
+app.get("/test-food", (req, res) => {
+  res.json({
+    name: "Kioene Kroccanti Spinaci",
+    kcal: 220,
+    protein: 12,
+    carbs: 18,
+    fat: 9
+  });
+});
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
