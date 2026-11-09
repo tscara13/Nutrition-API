@@ -15,17 +15,9 @@ app.get("/health", (req, res) => {
   });
 });
 
-app.get("/test-food", (req, res) => {
-  res.json({
-    name: "Kioene Kroccanti Spinaci",
-    kcal: 220,
-    protein: 12,
-    carbs: 18,
-    fat: 9
-  });
-});
-
 app.get("/extract-food", async (req, res) => {
+
+  console.log("START REQUEST");
 
   try {
 
@@ -33,18 +25,30 @@ app.get("/extract-food", async (req, res) => {
       "https://spesaonline.esselunga.it/commerce/nav/supermercato/store/prodotto/720145/kioene-kroccanti-6-mini-cotolette-vegetali-con-spinaci-italiani-200-g";
 
     const response = await axios.get(url, {
+      timeout: 15000,
       headers: {
         "User-Agent": "Mozilla/5.0"
       }
     });
 
-    res.send(response.data);
+    console.log("PAGE DOWNLOADED");
+
+    const html = response.data;
+
+    res.json({
+      success: true,
+      htmlLength: html.length,
+      first500Chars: html.substring(0, 500)
+    });
 
   } catch (error) {
 
+    console.log("ERROR");
+
     res.json({
       success: false,
-      error: error.message
+      message: error.message,
+      code: error.code || null
     });
 
   }
