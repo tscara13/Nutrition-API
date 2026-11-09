@@ -1,11 +1,10 @@
+const express = require("express");
 const axios = require("axios");
 const cheerio = require("cheerio");
 
-app.use(express.json());
-
-const express = require("express");
-
 const app = express();
+
+app.use(express.json());
 
 app.get("/", (req, res) => {
   res.send("Nutrition API online");
@@ -27,20 +26,22 @@ app.get("/test-food", (req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
 app.post("/extract-food", async (req, res) => {
   try {
 
     const { url } = req.body;
 
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing URL"
+      });
+    }
+
     const response = await axios.get(url, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/130.0 Safari/537.36"
       }
     });
 
@@ -51,7 +52,8 @@ app.post("/extract-food", async (req, res) => {
     res.json({
       success: true,
       title: $("title").text(),
-      htmlLength: html.length
+      htmlLength: html.length,
+      url: url
     });
 
   } catch (error) {
@@ -62,4 +64,10 @@ app.post("/extract-food", async (req, res) => {
     });
 
   }
+});
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
