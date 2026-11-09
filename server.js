@@ -38,10 +38,7 @@ app.get("/extract-food", async (req, res) => {
       }
     });
 
-    res.json({
-      success: true,
-      htmlLength: response.data.length
-    });
+    res.send(response.data);
 
   } catch (error) {
 
