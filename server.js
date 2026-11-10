@@ -7,13 +7,13 @@ const app = express();
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("Nutrition API v2 online");
+  res.send("Nutrition API v2.1 online");
 });
 
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
-    version: "2.0.0"
+    version: "2.1.0"
   });
 });
 
@@ -97,6 +97,7 @@ function extractNutritionTable(html) {
         value.replace(",", ".")
       );
     }
+
   });
 
   return nutrition;
@@ -104,28 +105,35 @@ function extractNutritionTable(html) {
 
 async function extractEsselunga(url) {
 
-  const productCode = extractEsselungaCode(url);
+  const productCode =
+    extractEsselungaCode(url);
 
   if (!productCode) {
+
     throw new Error(
       "Cannot extract Esselunga product code"
     );
+
   }
 
   const apiUrl =
     `https://spesaonline.esselunga.it/commerce/resources/displayable/detail/code/${productCode}`;
 
-  const response = await axios.get(apiUrl, {
-    headers: {
-      "User-Agent": "Mozilla/5.0",
-      "Accept": "application/json",
-      "X-Page-Path": "supermercato"
+  const response = await axios.get(
+    apiUrl,
+    {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json",
+        "X-Page-Path": "supermercato"
+      }
     }
-  });
+  );
 
   const data = response.data;
 
-  const product = data.displayableProduct;
+  const product =
+    data.displayableProduct;
 
   const nutritionInfo =
     data.informations.find(
@@ -139,116 +147,264 @@ async function extractEsselunga(url) {
 
   const nutrition =
     nutritionInfo
-      ? extractNutritionTable(nutritionInfo.value)
+      ? extractNutritionTable(
+          nutritionInfo.value
+        )
       : {};
 
   return {
+
     source: "Esselunga",
 
     name: product.description,
+
     brand: product.brand,
 
     barcode: product.barcode,
 
     image: product.imageURL,
 
-    packageSize: `${product.unitValue}${product.unitText}`,
+    packageSize:
+      `${product.unitValue}${product.unitText}`,
 
     serving: 100,
 
     kcal: nutrition.kcal || null,
-    protein: nutrition.protein || null,
-    carbs: nutrition.carbs || null,
-    fat: nutrition.fat || null,
-    fiber: nutrition.fiber || null,
-    salt: nutrition.salt || null,
 
-    ingredients: ingredientsInfo
-      ? stripHtml(ingredientsInfo.value)
-      : null,
+    protein:
+      nutrition.protein || null,
+
+    carbs:
+      nutrition.carbs || null,
+
+    fat:
+      nutrition.fat || null,
+
+    fiber:
+      nutrition.fiber || null,
+
+    salt:
+      nutrition.salt || null,
+
+    ingredients:
+      ingredientsInfo
+        ? stripHtml(
+            ingredientsInfo.value
+          )
+        : null,
 
     raw: {
-      productCode: product.code
+      productCode:
+        product.code
     }
+
   };
+}
+
+async function searchEsselunga(query) {
+
+  const response = await axios.post(
+    "https://spesaonline.esselunga.it/commerce/resources/search/facet",
+    {
+      query: query,
+      start: 0,
+      length: 20,
+      isLargeQuerySearch: true,
+      filters: [],
+      rmtCookieAllowed: false
+    },
+    {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json",
+        "Content-Type":
+          "application/json",
+        "X-Page-Path":
+          "supermercato"
+      }
+    }
+  );
+
+  const entities =
+    response.data.displayables?.entities || [];
+
+  return entities.map(item => ({
+
+    code: item.code,
+
+    name: item.description,
+
+    brand: item.brand,
+
+    price: item.price,
+
+    packageSize:
+      `${item.unitValue}${item.unitText}`,
+
+    image: item.imageURL,
+
+    productUrl:
+      `https://spesaonline.esselunga.it/commerce/nav/supermercato/store/prodotto/${item.code}/${item.sanitizeDescription}`
+
+  }));
+
 }
 
 async function extractFood(url) {
 
   if (
-    url.includes("spesaonline.esselunga.it")
+    url.includes(
+      "spesaonline.esselunga.it"
+    )
   ) {
-    return await extractEsselunga(url);
+
+    return await extractEsselunga(
+      url
+    );
+
   }
 
   throw new Error(
     "Provider not supported"
   );
+
 }
 
-app.get("/extract-food", async (req, res) => {
+app.get(
+  "/extract-food",
+  async (req, res) => {
 
-  try {
+    try {
 
-    const url = req.query.url;
+      const url =
+        req.query.url;
 
-    if (!url) {
-      return res.status(400).json({
-        success: false,
-        error: "Missing url"
+      if (!url) {
+
+        return res
+          .status(400)
+          .json({
+            success: false,
+            error:
+              "Missing url"
+          });
+
+      }
+
+      const result =
+        await extractFood(url);
+
+      res.json({
+        success: true,
+        food: result
       });
+
+    } catch (error) {
+
+      res
+        .status(500)
+        .json({
+          success: false,
+          error:
+            error.message
+        });
+
     }
 
-    const result =
-      await extractFood(url);
-
-    res.json({
-      success: true,
-      food: result
-    });
-
-  } catch (error) {
-
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-
   }
+);
 
-});
+app.post(
+  "/extract-food",
+  async (req, res) => {
 
-app.post("/extract-food", async (req, res) => {
+    try {
 
-  try {
+      const { url } =
+        req.body;
 
-    const { url } = req.body;
+      if (!url) {
 
-    if (!url) {
-      return res.status(400).json({
-        success: false,
-        error: "Missing url"
+        return res
+          .status(400)
+          .json({
+            success: false,
+            error:
+              "Missing url"
+          });
+
+      }
+
+      const result =
+        await extractFood(url);
+
+      res.json({
+        success: true,
+        food: result
       });
+
+    } catch (error) {
+
+      res
+        .status(500)
+        .json({
+          success: false,
+          error:
+            error.message
+        });
+
     }
 
-    const result =
-      await extractFood(url);
+  }
+);
 
-    res.json({
-      success: true,
-      food: result
-    });
+app.get(
+  "/search-food",
+  async (req, res) => {
 
-  } catch (error) {
+    try {
 
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+      const query =
+        req.query.q;
+
+      if (!query) {
+
+        return res
+          .status(400)
+          .json({
+            success: false,
+            error:
+              "Missing q parameter"
+          });
+
+      }
+
+      const results =
+        await searchEsselunga(
+          query
+        );
+
+      res.json({
+        success: true,
+        count:
+          results.length,
+        results
+      });
+
+    } catch (error) {
+
+      res
+        .status(500)
+        .json({
+          success: false,
+          error:
+            error.message
+        });
+
+    }
 
   }
-
-});
+);
 
 const PORT =
   process.env.PORT || 3000;
