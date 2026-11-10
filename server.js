@@ -25,7 +25,8 @@ app.get("/extract-food", async (req, res) => {
     const response = await axios.get(apiUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json"
+        "Accept": "application/json",
+        "X-Page-Path": "supermercato"
       }
     });
 
@@ -35,6 +36,16 @@ app.get("/extract-food", async (req, res) => {
     });
 
   } catch (error) {
+
+    res.json({
+      success: false,
+      error: error.message,
+      details: error.response?.data || null
+    });
+
+  }
+
+});
 
     res.json({
       success: false,
