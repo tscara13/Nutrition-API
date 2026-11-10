@@ -47,16 +47,6 @@ app.get("/extract-food", async (req, res) => {
 
 });
 
-    res.json({
-      success: false,
-      error: error.message,
-      details: error.response?.data || null
-    });
-
-  }
-
-});
-
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
