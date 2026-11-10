@@ -17,8 +17,6 @@ app.get("/health", (req, res) => {
 
 app.get("/extract-food", async (req, res) => {
 
-  console.log("START REQUEST");
-
   try {
 
     const url =
@@ -31,24 +29,32 @@ app.get("/extract-food", async (req, res) => {
       }
     });
 
-    console.log("PAGE DOWNLOADED");
-
     const html = response.data;
+
+    const interestingLines = html
+      .split("\n")
+      .filter(line =>
+        line.toLowerCase().includes("api") ||
+        line.toLowerCase().includes("product") ||
+        line.toLowerCase().includes("prodotto") ||
+        line.toLowerCase().includes("json") ||
+        line.toLowerCase().includes("catalog") ||
+        line.toLowerCase().includes("commerce")
+      )
+      .slice(0, 100);
 
     res.json({
       success: true,
       htmlLength: html.length,
-      first500Chars: html.substring(0, 500)
+      linesFound: interestingLines.length,
+      matches: interestingLines
     });
 
   } catch (error) {
 
-    console.log("ERROR");
-
     res.json({
       success: false,
-      message: error.message,
-      code: error.code || null
+      error: error.message
     });
 
   }
