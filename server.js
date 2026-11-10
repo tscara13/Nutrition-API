@@ -19,42 +19,27 @@ app.get("/extract-food", async (req, res) => {
 
   try {
 
-    const url =
-      "https://spesaonline.esselunga.it/commerce/nav/supermercato/store/prodotto/720145/kioene-kroccanti-6-mini-cotolette-vegetali-con-spinaci-italiani-200-g";
+    const apiUrl =
+      "https://spesaonline.esselunga.it/commerce/resources/displayable/detail/code/720145";
 
-    const response = await axios.get(url, {
-      timeout: 15000,
+    const response = await axios.get(apiUrl, {
       headers: {
-        "User-Agent": "Mozilla/5.0"
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json"
       }
     });
 
-    const html = response.data;
-
-    const interestingLines = html
-      .split("\n")
-      .filter(line =>
-        line.toLowerCase().includes("api") ||
-        line.toLowerCase().includes("product") ||
-        line.toLowerCase().includes("prodotto") ||
-        line.toLowerCase().includes("json") ||
-        line.toLowerCase().includes("catalog") ||
-        line.toLowerCase().includes("commerce")
-      )
-      .slice(0, 100);
-
     res.json({
       success: true,
-      htmlLength: html.length,
-      linesFound: interestingLines.length,
-      matches: interestingLines
+      data: response.data
     });
 
   } catch (error) {
 
     res.json({
       success: false,
-      error: error.message
+      error: error.message,
+      details: error.response?.data || null
     });
 
   }
