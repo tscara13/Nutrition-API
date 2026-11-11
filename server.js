@@ -200,7 +200,87 @@ async function extractEsselunga(url) {
 
   };
 }
+async function extractEsselungaByCode(productCode) {
 
+  const apiUrl =
+    `https://spesaonline.esselunga.it/commerce/resources/displayable/detail/code/${productCode}`;
+
+  const response = await axios.get(
+    apiUrl,
+    {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json",
+        "X-Page-Path": "supermercato"
+      }
+    }
+  );
+
+  const data = response.data;
+
+  const product =
+    data.displayableProduct;
+
+  const nutritionInfo =
+    data.informations.find(
+      x => x.label === "Valori nutrizionali"
+    );
+
+  const ingredientsInfo =
+    data.informations.find(
+      x => x.label === "Ingredienti"
+    );
+
+  const nutrition =
+    nutritionInfo
+      ? extractNutritionTable(
+          nutritionInfo.value
+        )
+      : {};
+
+  return {
+
+    source: "Esselunga",
+
+    name: product.description,
+
+    brand: product.brand,
+
+    barcode: product.barcode,
+
+    image: product.imageURL,
+
+    packageSize:
+      `${product.unitValue}${product.unitText}`,
+
+    serving: 100,
+
+    kcal: nutrition.kcal || null,
+
+    protein: nutrition.protein || null,
+
+    carbs: nutrition.carbs || null,
+
+    fat: nutrition.fat || null,
+
+    fiber: nutrition.fiber || null,
+
+    salt: nutrition.salt || null,
+
+    ingredients:
+      ingredientsInfo
+        ? stripHtml(
+            ingredientsInfo.value
+          )
+        : null,
+
+    raw: {
+      productCode:
+        product.code
+    }
+
+  };
+}
 async function searchEsselunga(query) {
 
   const response = await axios.post(
@@ -400,6 +480,36 @@ app.get(
           error:
             error.message
         });
+
+    }
+
+  }
+);
+app.get(
+  "/extract-food-by-code/:code",
+  async (req, res) => {
+
+    try {
+
+      const code =
+        req.params.code;
+
+      const result =
+        await extractEsselungaByCode(
+          code
+        );
+
+      res.json({
+        success: true,
+        food: result
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
 
     }
 
